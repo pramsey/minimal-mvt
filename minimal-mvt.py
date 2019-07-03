@@ -3,6 +3,8 @@ import socketserver
 import re
 import psycopg2
 
+# Table to query for MVT data, and columns to
+# include in the tiles.
 TABLE = {
     'table':'nyc_streets',
     'srid':'26918',
@@ -10,6 +12,7 @@ TABLE = {
     'attrColumns':'gid, name, type'
     }  
 
+# Database to connect to
 DATABASE = {
     'user':'pramsey',
     'password':'password',
@@ -18,6 +21,7 @@ DATABASE = {
     'database':'nyc'
     }
 
+# HTTP server information
 HOST = 'localhost'
 PORT = 8080
 
@@ -28,7 +32,7 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
 
     DATABASE_CONNECTION = None
 
-    # Search REQUEST_PATH for /z/y/x.format patterns
+    # Search REQUEST_PATH for /{z}/{y}/{x}.{format} patterns
     def pathToTile(self, path):
         m = re.search(r'^\/(\d+)\/(\d+)\/(\d+)\.(\w+)', path)
         if (m):
@@ -39,49 +43,51 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
         else:
             return None
 
+
     # Do we have all keys we need? 
-    # Do the x/y coordinates make sense at this zoom level?
+    # Do the tile x/y coordinates make sense at this zoom level?
     def tileIsValid(self, tile):
-        if 'x' not in tile or 'y' not in tile or 'zoom' not in tile or 'format' not in tile:
+        if not ('x' in tile and 'y' in tile and 'zoom' in tile):
             return False
-        if tile['format'] not in ['pbf', 'mvt']:
+        if 'format' not in tile or tile['format'] not in ['pbf', 'mvt']:
             return False
         size = 2 ** tile['zoom'];
         if tile['x'] >= size or tile['y'] >= size:
             return False
         return True
 
-    # Calculate coordinates in spherical mercator (EPSG:3857)
+
+    # Calculate envelope in "Spherical Mercator" (https://epsg.io/3857)
     def tileToEnvelope(self, tile):
-        # Width in EPSG:3857
-        worldGeoMax = 20037508.3427892
-        worldGeoMin = -1 * worldGeoMax
-        worldGeoSize = worldGeoMax - worldGeoMin
+        # Width of world in EPSG:3857
+        worldMercMax = 20037508.3427892
+        worldMercMin = -1 * worldMercMax
+        worldMercSize = worldMercMax - worldMercMin
         # Width in tiles
         worldTileSize = 2 ** tile['zoom']
         # Tile width in EPSG:3857
-        tileGeoSize = worldGeoSize / worldTileSize
-        tileX = tile['x']
-        tileY = worldTileSize - tile['y']
+        tileMercSize = worldMercSize / worldTileSize
         # Calculate geographic bounds from 
         env = dict()
-        env['size'] = tileGeoSize
-        env['xmin'] = worldGeoMin + tileGeoSize * tile['x']
-        env['xmax'] = worldGeoMin + tileGeoSize * (tile['x'] + 1)
-        env['ymin'] = worldGeoMax - tileGeoSize * (tile['y'] + 1)
-        env['ymax'] = worldGeoMax - tileGeoSize * (tile['y'])
+        env['xmin'] = worldMercMin + tileMercSize * tile['x']
+        env['xmax'] = worldMercMin + tileMercSize * (tile['x'] + 1)
+        env['ymin'] = worldMercMax - tileMercSize * (tile['y'] + 1)
+        env['ymax'] = worldMercMax - tileMercSize * (tile['y'])
         return env
 
 
+    # Generate SQL to materialize a query envelope in EPSG:3857.
+    # Densify the edges a little so the envelope can be
+    # safely converted to other coordinate systems.
     def envelopeToBoundsSQL(self, env):
-        # Densify edges of bounds so that when transformed to other coordinate
-        # reference systems the edges partly respect curvature
         DENSIFY_FACTOR = 4
         env['segSize'] = (env['xmax'] - env['xmin'])/DENSIFY_FACTOR
         sql_tmpl = 'ST_Segmentize(ST_MakeEnvelope({xmin}, {ymin}, {xmax}, {ymax}, 3857),{segSize})'
         return sql_tmpl.format(**env)
 
-        
+
+    # Generate a SQL query to pull a tile worth of MVT data
+    # from the table of interest.        
     def envelopeToSQL(self, env):
         tbl = TABLE.copy()
         tbl['env'] = self.envelopeToBoundsSQL(env)
@@ -105,6 +111,7 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
         return sql_tmpl.format(**tbl)
 
 
+    # Run tile query SQL and return error on failure conditions
     def sqlToPbf(self, sql):
         # Make and hold connection to database
         if not self.DATABASE_CONNECTION:
