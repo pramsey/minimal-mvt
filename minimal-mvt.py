@@ -67,7 +67,9 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
         worldTileSize = 2 ** tile['zoom']
         # Tile width in EPSG:3857
         tileMercSize = worldMercSize / worldTileSize
-        # Calculate geographic bounds from 
+        # Calculate geographic bounds from tile coordinates
+        # XYZ tile coordinates are in "image space" so origin is
+        # top-left, not bottom right
         env = dict()
         env['xmin'] = worldMercMin + tileMercSize * tile['x']
         env['xmax'] = worldMercMin + tileMercSize * (tile['x'] + 1)
