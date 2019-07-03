@@ -1,9 +1,11 @@
 import 'ol/ol.css';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
+import XYZ from 'ol/source/XYZ';
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
 import MVT from 'ol/format/MVT.js';
+import TileSource from 'ol/source/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import {Fill, Stroke, Style} from 'ol/style.js';
@@ -16,8 +18,8 @@ var vtLayer = new VectorTileLayer({
   }),
   style: new Style({
       stroke: new Stroke({
-        color: 'gray',
-        width: 3
+        color: 'red',
+        width: 1
       })
   })
 });
@@ -25,6 +27,12 @@ var vtLayer = new VectorTileLayer({
 var tLayer = new TileLayer({
       source: new OSM()
     });
+
+var cartoLayer = new TileLayer({
+  source: new XYZ({
+    url: 'http://{a-d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+  })
+});
 
 var esriLayer = new VectorTileLayer({
   source: new VectorTileSource({
@@ -36,7 +44,7 @@ var esriLayer = new VectorTileLayer({
 const map = new Map({
   target: 'map',
   layers: [
-    esriLayer,
+    cartoLayer,
     vtLayer
   ],
   view: new View({
