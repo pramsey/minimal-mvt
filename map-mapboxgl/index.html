@@ -19,7 +19,7 @@
 var map = new mapboxgl.Map({
     'container': 'map',
     'zoom': 12,
-    'center': [-74.006, 40.71],
+    'center': [-74.006, 40.71], // New York
     'style': {
         'version': 8,
         'sources': {
@@ -41,16 +41,17 @@ var map = new mapboxgl.Map({
 
         },
         'layers': [{
-            'id': 'carto-dark',
+            'id': 'carto-dark-layer',
             'type': 'raster',
             'source': 'carto-dark',
             'minzoom': 0,
             'maxzoom': 22
         },{
-            'id': 'postgis-tiles',
+            'id': 'postgis-tiles-layer',
             'type': 'line',
             'source': 'postgis-tiles',
-            'source-layer': 'default',
+            // ST_AsMVT() uses 'default' as layer name
+            'source-layer': 'default', 
             'minzoom': 0,
             'maxzoom': 22,
             'paint': {
