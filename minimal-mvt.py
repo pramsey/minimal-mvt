@@ -55,6 +55,8 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
         size = 2 ** tile['zoom'];
         if tile['x'] >= size or tile['y'] >= size:
             return False
+        if tile['x'] < 0 or tile['y'] < 0:
+            return False
         return True
 
 
