@@ -1,7 +1,7 @@
 
 venv
 .git
-minimal-map/dist
-minimal-map/node_modules
-minimal-map/.cache
-minimal-map/package-lock.json
+map-openlayers/dist
+map-openlayers/node_modules
+map-openlayers/.cache
+map-openlayers/package-lock.json

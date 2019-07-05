@@ -2,24 +2,25 @@ import http.server
 import socketserver
 import re
 import psycopg2
+import json
+
+# Database to connect to
+DATABASE = {
+    'user':     'pramsey',
+    'password': 'password',
+    'host':     'localhost',
+    'port':     '5432',
+    'database': 'nyc'
+    }
 
 # Table to query for MVT data, and columns to
 # include in the tiles.
 TABLE = {
-    'table':'nyc_streets',
-    'srid':'26918',
-    'geomColumn':'geom',
-    'attrColumns':'gid, name, type'
+    'table':       'nyc_streets',
+    'srid':        '26918',
+    'geomColumn':  'geom',
+    'attrColumns': 'gid, name, type'
     }  
-
-# Database to connect to
-DATABASE = {
-    'user':'pramsey',
-    'password':'password',
-    'host':'localhost',
-    'port':'5432',
-    'database':'nyc'
-    }
 
 # HTTP server information
 HOST = 'localhost'
@@ -148,12 +149,13 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
 
         self.log_message("path: %s\ntile: %s\n env: %s" % (self.path, tile, env))
         self.log_message("sql: %s" % (sql))
-
+        
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-type", "application/vnd.mapbox-vector-tile")
         self.end_headers()
         self.wfile.write(pbf)
+
 
 
 ########################################################################
