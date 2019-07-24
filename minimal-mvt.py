@@ -33,7 +33,7 @@ class TileRequestHandler(http.server.BaseHTTPRequestHandler):
 
     DATABASE_CONNECTION = None
 
-    # Search REQUEST_PATH for /{z}/{y}/{x}.{format} patterns
+    # Search REQUEST_PATH for /{z}/{x}/{y}.{format} patterns
     def pathToTile(self, path):
         m = re.search(r'^\/(\d+)\/(\d+)\/(\d+)\.(\w+)', path)
         if (m):
